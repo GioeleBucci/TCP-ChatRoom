@@ -64,6 +64,9 @@ def handle_client(client: socket.socket, addr):
 
 def process_command(admin: socket.socket, command: str):
     command = command[1:].strip()  # normalize command
+    if users[admin] != "admin":
+        send_message(admin, "Commands can only be executed by an admin.")
+        return
     if command.startswith("kick"):
         command_parts = command.split(" ", 2)
         if len(command_parts) < 3:

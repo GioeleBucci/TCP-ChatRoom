@@ -30,10 +30,6 @@ def handle_command(command):
             stop_thread = True
 
 
-def is_command(text) -> bool:
-    return text in [command.value for command in Command]
-
-
 # Function to receive messages from the server
 def receive_messages():
     while not stop_thread:
@@ -43,6 +39,10 @@ def receive_messages():
         except:
             client.close()
             return
+
+
+def is_command(text) -> bool:
+    return text in [command.value for command in Command]
 
 
 # Sending messages to the server
