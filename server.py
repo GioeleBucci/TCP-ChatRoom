@@ -57,39 +57,55 @@ def handle_client(client: socket.socket, addr):
             print(f"Client {addr} disconnected")
             server_broadcast(f"{clients[client]} has left the chat!")
             break
-    # Close the connection with the client
-    client.close()
-    del clients[client]
+    close_connection(client)
 
 
 def process_command(admin: socket.socket, command: str):
-    command = command[1:].strip()  # normalize command
     if clients[admin] != "admin":
         send_message(admin, "Commands can only be executed by an admin.")
         return
-    if command.startswith("kick"):
-        command_parts = command.split(" ", 2)
-        if len(command_parts) < 3:
-            send_message(admin, "Syntax: /kick <username> <reason>")
-            return
-        username = command_parts[1]
-        reason = command_parts[2]
-        if username in clients.values():
-            for client, nickname in clients.items():
-                if nickname == username:
-                    send_message(client, f"You have been kicked for: {reason}")
-                    send_command(client, Command.KICK)
-                    client.close()
-                    del clients[client]
-                    server_broadcast(f"{nickname} has been kicked from the chat.")
-                    break
-        else:
-            send_message(admin, f"User {username} not found!")
-    elif command.startswith("list"):
-        users = "\n".join(clients.values())
-        send_message(admin, f"Connected users:\n{users}")
+    command_parts = command[1:].split(" ")
+    command_name = command_parts[0]
+    args = command_parts[1:]
+    if command_name in commands_list:
+        fun = commands_list[command_name]
+        fun(admin, args)
     else:
         send_message(admin, "Invalid command!")
+
+
+def cmd_kick(admin: socket.socket, args: str):
+    if len(args) < 2:
+        send_message(admin, "Syntax: /kick <username> <reason>")
+        return
+    username = args[0]
+    reason = args[1]
+    if username in clients.values():
+        for client, nickname in clients.items():
+            if nickname == username:
+                send_message(client, f"You have been kicked for: {reason}")
+                send_command(client, Command.KICK)
+                close_connection(client)
+                server_broadcast(f"{nickname} has been kicked from the chat.")
+                break
+    else:
+        send_message(admin, f"User {username} not found!")
+
+
+def cmd_list(admin: socket.socket, args: str):
+    users = "\n".join(clients.values())
+    send_message(admin, f"Connected users:\n{users}")
+
+
+commands_list = {
+    "kick": cmd_kick,
+    "list": cmd_list,
+}
+
+
+def close_connection(client: socket.socket):
+    client.close()
+    del clients[client]
 
 
 def server_start():
