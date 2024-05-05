@@ -1,11 +1,12 @@
 import socket
-import sys
 import threading
+import sys
+from utils import receive_message, send_message, get_address
 from commands import Command
 
 # Client configuration
 client: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(("127.0.0.1", 5555))
+client.connect(get_address(sys.argv))
 
 # global variables
 stop_thread: bool = False
@@ -21,10 +22,10 @@ def handle_command(command):
         stop_thread = True
         # sys.exit()
     elif command == Command.NICK.value:
-        client.send(nickname.encode("utf-8"))
+        send_message(client, nickname)
     elif command == Command.PASSW.value:
-        client.send(password.encode("utf-8"))
-        if client.recv(1024).decode("utf-8") != Command.PASSW_OK.value:
+        send_message(client, password)
+        if receive_message(client) != Command.PASSW_OK.value:
             print("Connection refused (wrong password)")
             stop_thread = True
 
@@ -37,7 +38,7 @@ def is_command(text) -> bool:
 def receive_messages():
     while not stop_thread:
         try:
-            message = client.recv(1024).decode("utf-8")
+            message = receive_message(client)
             print(message) if not is_command(message) else handle_command(message)
         except:
             client.close()
@@ -51,17 +52,14 @@ def write_messages():
             message = input()
             if message.startswith("/"):
                 if nickname == "admin":
-                    amdin_command(message)
+                    send_message(client, message)
                 else:
                     print("Commands can only be executed by an admin.")
             else:
-                client.send(message.encode("utf-8"))
+                send_message(client, message)
         except:
             client.close()
             return
-
-def amdin_command(command: str):
-    client.send(command.encode("utf-8"))
 
 
 # Start threads
