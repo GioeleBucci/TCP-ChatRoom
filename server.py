@@ -95,13 +95,13 @@ def process_command(admin: socket.socket, command: str):
 def server_start():
     # Server configuration
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(get_address(sys.argv))
+    addr = get_address(sys.argv)
+    server.bind(addr)
     server.listen()
-    print("Server listening...")
+    print(f"Server up on port {addr[1]}")
     # Accept and handle client connections
     while True:
         client_socket, addr = server.accept()
-        # clients.append(client_socket)
         client_thread = threading.Thread(
             target=handle_client, args=(client_socket, addr)
         )

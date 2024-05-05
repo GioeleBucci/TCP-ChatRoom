@@ -4,22 +4,27 @@ import socket
 from typing import List, Tuple
 from commands import Command
 
-ENCODING = "utf-8"
+ENCODING = "ascii"
 
 
-def send_message(client: socket.socket, message: str):
-    client.send(message.encode(ENCODING))
+def send_message(socket: socket.socket, message: str):
+    """Sends a message to a socket."""
+    socket.send(message.encode(ENCODING))
 
 
-def send_command(client: socket.socket, command: Command):
-    client.send(command.value.encode(ENCODING))
+def send_command(socket: socket.socket, command: Command):
+    """Sends a command to a socket."""
+    socket.send(command.value.encode(ENCODING))
 
 
-def receive_message(client: socket.socket) -> str:
-    return client.recv(1024).decode(ENCODING)
+def receive_message(socket: socket.socket) -> str:
+    """Receives a message from a socket."""
+    return socket.recv(1024).decode(ENCODING)
 
 
 def get_address(args: List[str]) -> Tuple[str, int]:
+    """Extracts the IP address and port number from the command line arguments.
+    If such argoments aren't present, defaults to a preset configuration"""
     if len(args) < 3:
         print("IP and port not specified, defaulting to localhost:55555\n")
         return "localhost", 55555
