@@ -50,13 +50,13 @@ def write_messages():
     while not stop_thread:
         try:
             message = input()
-            if message.startswith("/"):
-                if nickname == "admin":
-                    send_message(client, message)
-                else:
-                    print("Commands can only be executed by an admin.")
-            else:
-                send_message(client, message)
+            # if message.startswith("/"):
+            #     if nickname == "admin":
+            #         send_message(client, message)
+            #     else:
+            #         print("Commands can only be executed by an admin.")
+            # else:
+            send_message(client, message)
         except:
             client.close()
             return

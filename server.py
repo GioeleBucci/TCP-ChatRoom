@@ -1,7 +1,7 @@
 import socket
 import sys
 import threading
-from typing import Dict
+from typing import Callable, Dict, Tuple
 from commands import Command
 from utils import send_command, receive_message, send_message, get_address
 
@@ -60,46 +60,87 @@ def handle_client(client: socket.socket, addr):
     close_connection(client)
 
 
-def process_command(admin: socket.socket, command: str):
-    if clients[admin] != "admin":
-        send_message(admin, "Commands can only be executed by an admin.")
-        return
-    command_parts = command[1:].split(" ")
+def process_command(client: socket.socket, command: str):
+    command_parts = command[1:].strip().split(" ")
     command_name = command_parts[0]
     args = command_parts[1:]
     if command_name in commands_list:
-        fun = commands_list[command_name]
-        fun(admin, args)
+        fun = commands_list[command_name][0]
+        isPrivileged = commands_list[command_name][1]
+        if isPrivileged and clients[client] != "admin":
+            send_message(client, "This command can only be executed by an admin.")
+            return
+        fun(client, args)
     else:
-        send_message(admin, "Invalid command!")
+        send_message(client, "Invalid command!")
 
 
-def cmd_kick(admin: socket.socket, args: str):
+def cmd_kick(client: socket.socket, args: str):
     if len(args) < 2:
-        send_message(admin, "Syntax: /kick <username> <reason>")
+        send_message(client, "Syntax: /kick <username> <reason>")
         return
-    username = args[0]
+    destUsername = args[0]
     reason = args[1]
-    if username in clients.values():
-        for client, nickname in clients.items():
-            if nickname == username:
-                send_message(client, f"You have been kicked for: {reason}")
-                send_command(client, Command.KICK)
-                close_connection(client)
-                server_broadcast(f"{nickname} has been kicked from the chat.")
+    if destUsername in clients.values():
+        for user, nickname in clients.items():
+            if nickname == destUsername:
+                send_message(user, f"You have been kicked for: {reason}")
+                send_command(user, Command.KICK)
+                close_connection(user)
+                server_broadcast(f"{destUsername} has been kicked from the chat.")
                 break
     else:
-        send_message(admin, f"User {username} not found!")
+        send_message(client, f"User {destUsername} not found!")
 
 
-def cmd_list(admin: socket.socket, args: str):
+def cmd_list(client: socket.socket, args: str):
     users = "\n".join(clients.values())
-    send_message(admin, f"Connected users:\n{users}")
+    send_message(client, f"Connected users:\n{users}")
 
 
-commands_list = {
-    "kick": cmd_kick,
-    "list": cmd_list,
+def cmd_msg(client: socket.socket, args: str):
+    if len(args) < 2:
+        send_message(client, "Syntax: /msg <username> <message>")
+        return
+    destUsername = args[0]
+    message = " ".join(args[1:])
+    if destUsername in clients.values():
+        for user, nickname in clients.items():
+            if nickname == destUsername:
+                send_message(user, f"{clients[client]} (private message): {message}")
+                print(f"{clients[client]} to {destUsername}: {message}")
+                break
+    else:
+        send_message(client, f"User {destUsername} not found!")
+
+
+def cmd_whoami(client: socket.socket, args: str):
+    send_message(client, f"Your nickname is {clients[client]}")
+
+
+def cmd_whois(client: socket.socket, args: str):
+    if len(args) < 1:
+        send_message(client, "Syntax: /whois <username>")
+        return
+    username = args[0]
+    if username in clients.values():
+        for user, nickname in clients.items():
+            if nickname == username:
+                send_message(client, f"{username} is {user.getpeername()}")
+    else:
+        send_message(client, f"User {username} not found!")
+
+
+"""
+a dictionary with the commands that can be executed.
+Each command is a tuple with a function and a boolean that indicates if the command is reserved to admin use.
+"""
+commands_list: Dict[str, Tuple[Callable[[socket.socket, str], None], bool]] = {
+    "kick": (cmd_kick, True),
+    "whois": (cmd_whois, True),
+    "list": (cmd_list, False),
+    "msg": (cmd_msg, False),
+    "whoami": (cmd_whoami, False),
 }
 
 
