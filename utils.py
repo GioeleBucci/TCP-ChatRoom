@@ -2,7 +2,7 @@
 
 import socket
 from typing import List, Tuple
-from commands import Command
+from signals import Signal
 
 ENCODING = "ascii"
 
@@ -12,7 +12,7 @@ def send_message(socket: socket.socket, message: str):
     socket.send(message.encode(ENCODING))
 
 
-def send_command(socket: socket.socket, command: Command):
+def send_command(socket: socket.socket, command: Signal):
     """Sends a command to a socket."""
     socket.send(command.value.encode(ENCODING))
 

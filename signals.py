@@ -1,6 +1,6 @@
 from enum import Enum
 
-class Command(Enum):
+class Signal(Enum):
     NICK = "NICK" # ask for nickname
     NICK_OK = "NICK_OK" # ask for nickname
     PASSW = "PASSW" # ask for password

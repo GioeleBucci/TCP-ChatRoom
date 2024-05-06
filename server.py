@@ -2,7 +2,7 @@ import socket
 import sys
 import threading
 from typing import Callable, Dict, Tuple
-from commands import Command
+from signals import Signal
 from utils import send_command, receive_message, send_message, get_address
 
 # clients and nicknames
@@ -13,22 +13,20 @@ admin_password = "password"
 
 def new_client(client: socket.socket, addr):
     print(f"New connection from {addr}")
-    send_command(client, Command.NICK)
+    send_command(client, Signal.NICK)
     nickname = receive_message(client)
     if nickname not in clients.values():
-        send_command(client, Command.NICK_OK)
+        send_command(client, Signal.NICK_OK)
     else:
-        send_message(client, "Connection refused (nickname already in use)")
-        client.close()
+        close_connection(client)
         return
     if nickname == "admin":
-        send_command(client, Command.PASSW)
+        send_command(client, Signal.PASSW)
         password = receive_message(client)
         if password == admin_password:
-            send_command(client, Command.PASSW_OK)
+            send_command(client, Signal.PASSW_OK)
         else:
-            send_message(client, "Connection refused (wrong password)")
-            client.close()
+            close_connection(client)
             return
     clients[client] = nickname
     print(f"Nickname of {addr} set to {nickname}")
@@ -61,10 +59,11 @@ def handle_client(client: socket.socket, addr):
             else:
                 client_broadcast(client, message)
         except:
-            print(f"Client {addr} disconnected")
-            server_broadcast(f"{clients[client]} has left the chat!")
+            leftName = clients[client]
+            print(f"Client {leftName} ({addr}) disconnected")
+            close_connection(client)
+            server_broadcast(f"{leftName} has left the chat!")
             break
-    close_connection(client)
 
 
 def process_command(client: socket.socket, command: str):
@@ -87,12 +86,12 @@ def cmd_kick(client: socket.socket, args: str):
         send_message(client, "Syntax: /kick <username> <reason>")
         return
     destUsername = args[0]
-    reason = args[1]
+    reason = " ".join(args[1:])
     if destUsername in clients.values():
         for user, nickname in clients.items():
             if nickname == destUsername:
                 send_message(user, f"You have been kicked for: {reason}")
-                send_command(user, Command.KICK)
+                send_command(user, Signal.KICK)
                 close_connection(user)
                 server_broadcast(f"{destUsername} has been kicked from the chat.")
                 break
@@ -152,8 +151,10 @@ commands_list: Dict[str, Tuple[Callable[[socket.socket, str], None], bool]] = {
 
 
 def close_connection(client: socket.socket):
+    client.shutdown(socket.SHUT_RDWR)
     client.close()
-    del clients[client]
+    if client in clients:
+        del clients[client]
 
 
 def server_start():

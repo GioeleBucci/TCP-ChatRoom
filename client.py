@@ -2,7 +2,7 @@ import socket
 import threading
 import sys
 from utils import receive_message, send_message, get_address
-from commands import Command
+from signals import Signal
 
 # Client configuration
 client: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,18 +16,18 @@ if nickname == "admin":
 
 
 def handle_command(command):
-    if command == Command.KICK.value:
+    if command == Signal.KICK.value:
         print("Kicked from chatroom.")
         global stop_thread
         stop_thread = True
-    elif command == Command.NICK.value:
+    elif command == Signal.NICK.value:
         send_message(client, nickname)
-        if receive_message(client) != Command.NICK_OK.value:
+        if receive_message(client) != Signal.NICK_OK.value:
             print("Connection refused (nickname already in use)")
             stop_thread = True
-    elif command == Command.PASSW.value:
+    elif command == Signal.PASSW.value:
         send_message(client, password)
-        if receive_message(client) != Command.PASSW_OK.value:
+        if receive_message(client) != Signal.PASSW_OK.value:
             print("Connection refused (wrong password)")
             stop_thread = True
 
@@ -44,7 +44,7 @@ def receive_messages():
 
 
 def is_command(text) -> bool:
-    return text in [command.value for command in Command]
+    return text in [command.value for command in Signal]
 
 
 # Sending messages to the server
