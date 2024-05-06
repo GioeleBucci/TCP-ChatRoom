@@ -59,7 +59,9 @@ def handle_client(client: socket.socket, addr):
             else:
                 client_broadcast(client, message)
         except:
-            leftName = clients[client]
+            leftName = clients.get(client, None)
+            if leftName is None:
+                break
             print(f"Client {leftName} ({addr}) disconnected")
             close_connection(client)
             server_broadcast(f"{leftName} has left the chat!")
