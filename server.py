@@ -11,10 +11,16 @@ clients: Dict[socket.socket, str] = {}
 admin_password = "password"
 
 
-def new_client(client, addr):
+def new_client(client: socket.socket, addr):
     print(f"New connection from {addr}")
     send_command(client, Command.NICK)
     nickname = receive_message(client)
+    if nickname not in clients.values():
+        send_command(client, Command.NICK_OK)
+    else:
+        send_message(client, "Connection refused (nickname already in use)")
+        client.close()
+        return
     if nickname == "admin":
         send_command(client, Command.PASSW)
         password = receive_message(client)
@@ -22,6 +28,7 @@ def new_client(client, addr):
             send_command(client, Command.PASSW_OK)
         else:
             send_message(client, "Connection refused (wrong password)")
+            client.close()
             return
     clients[client] = nickname
     print(f"Nickname of {addr} set to {nickname}")
@@ -137,10 +144,10 @@ Each command is a tuple with a function and a boolean that indicates if the comm
 """
 commands_list: Dict[str, Tuple[Callable[[socket.socket, str], None], bool]] = {
     "kick": (cmd_kick, True),
-    "whois": (cmd_whois, True),
     "list": (cmd_list, False),
     "msg": (cmd_msg, False),
     "whoami": (cmd_whoami, False),
+    "whois": (cmd_whois, True),
 }
 
 

@@ -20,9 +20,11 @@ def handle_command(command):
         print("Kicked from chatroom.")
         global stop_thread
         stop_thread = True
-        # sys.exit()
     elif command == Command.NICK.value:
         send_message(client, nickname)
+        if receive_message(client) != Command.NICK_OK.value:
+            print("Connection refused (nickname already in use)")
+            stop_thread = True
     elif command == Command.PASSW.value:
         send_message(client, password)
         if receive_message(client) != Command.PASSW_OK.value:
@@ -50,12 +52,6 @@ def write_messages():
     while not stop_thread:
         try:
             message = input()
-            # if message.startswith("/"):
-            #     if nickname == "admin":
-            #         send_message(client, message)
-            #     else:
-            #         print("Commands can only be executed by an admin.")
-            # else:
             send_message(client, message)
         except:
             client.close()
