@@ -1,12 +1,10 @@
 import socket
 import sys
 import threading
-from typing import Callable, Dict, Tuple
+from typing import Callable, Tuple
 from signals import Signal
-from utils import send_command, receive_message, send_message, get_address
-
-# clients and nicknames
-clients: Dict[socket.socket, str] = {}
+from commands import Command
+from serverutils import *
 
 # admin password (stored in plain text as proof of concept)
 admin_password = "password"
@@ -33,21 +31,6 @@ def new_client(client: socket.socket, addr):
     server_broadcast(f"{nickname} has joined the chat!")
     clients[client] = nickname
     send_message(client, f"Welcome to the chatroom {nickname}!")
-
-
-def server_broadcast(message: str):
-    print(message)
-    for client in clients:
-        send_message(client, message)
-
-
-# sends a message to all other clients
-def client_broadcast(client: socket.socket, message: str):
-    formatted_msg = f"{clients[client]}: {message}"
-    print(formatted_msg)
-    for c in clients:
-        if c != client:
-            send_message(c, formatted_msg)
 
 
 # handle a client connection
@@ -85,80 +68,17 @@ def process_command(client: socket.socket, command: str):
         send_message(client, "Invalid command!")
 
 
-def cmd_kick(client: socket.socket, args: str):
-    if len(args) < 2:
-        send_message(client, "Syntax: /kick <username> <reason>")
-        return
-    destUsername = args[0]
-    reason = " ".join(args[1:])
-    if destUsername in clients.values():
-        for user, nickname in clients.items():
-            if nickname == destUsername:
-                send_message(user, f"You have been kicked for: {reason}")
-                send_command(user, Signal.KICK)
-                close_connection(user)
-                server_broadcast(f"{destUsername} has been kicked from the chat.")
-                break
-    else:
-        send_message(client, f"User {destUsername} not found!")
-
-
-def cmd_list(client: socket.socket, args: str):
-    users = "\n".join(clients.values())
-    send_message(client, f"Connected users:\n{users}")
-
-
-def cmd_msg(client: socket.socket, args: str):
-    if len(args) < 2:
-        send_message(client, "Syntax: /msg <username> <message>")
-        return
-    destUsername = args[0]
-    message = " ".join(args[1:])
-    if destUsername in clients.values():
-        for user, nickname in clients.items():
-            if nickname == destUsername:
-                send_message(user, f"{clients[client]} (private message): {message}")
-                print(f"{clients[client]} to {destUsername}: {message}")
-                break
-    else:
-        send_message(client, f"User {destUsername} not found!")
-
-
-def cmd_whoami(client: socket.socket, args: str):
-    send_message(client, f"Your nickname is {clients[client]}")
-
-
-def cmd_whois(client: socket.socket, args: str):
-    if len(args) < 1:
-        send_message(client, "Syntax: /whois <username>")
-        return
-    username = args[0]
-    if username in clients.values():
-        for user, nickname in clients.items():
-            if nickname == username:
-                send_message(client, f"{username} is {user.getpeername()}")
-    else:
-        send_message(client, f"User {username} not found!")
-
-
 """
 a dictionary with the commands that can be executed.
 Each command is a tuple with a function and a boolean that indicates if the command is reserved to admin use.
 """
-commands_list: Dict[str, Tuple[Callable[[socket.socket, str], None], bool]] = {
-    "kick": (cmd_kick, True),
-    "list": (cmd_list, False),
-    "msg": (cmd_msg, False),
-    "whoami": (cmd_whoami, False),
-    "whois": (cmd_whois, True),
+commands_list: dict[str, Tuple[Callable, bool]] = {
+    "kick": (Command.kick, True),
+    "list": (Command.list, False),
+    "msg": (Command.msg, False),
+    "whoami": (Command.whoami, False),
+    "whois": (Command.whois, True),
 }
-
-
-def close_connection(client: socket.socket):
-    client.shutdown(socket.SHUT_RDWR)
-    client.close()
-    if client in clients:
-        del clients[client]
 
 
 def server_start():
