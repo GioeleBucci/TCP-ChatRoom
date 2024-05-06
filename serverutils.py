@@ -31,6 +31,7 @@ def client_broadcast(client: socket.socket, message: str):
 
 
 def close_connection(client: socket.socket):
+    """Closes a client connection."""
     client.shutdown(socket.SHUT_RDWR)
     client.close()
     if client in clients:

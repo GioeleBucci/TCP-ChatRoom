@@ -3,10 +3,12 @@ from serverutils import *
 
 class Command:
     def list(client: socket.socket, args: str):
+        """List all connected users."""
         users = "\n".join(clients.values())
         send_message(client, f"Connected users:\n{users}")
 
     def msg(client: socket.socket, args: str):
+        """Send a private message to a specific user."""
         if len(args) < 2:
             send_message(client, "Syntax: /msg <username> <message>")
             return
@@ -24,9 +26,11 @@ class Command:
             send_message(client, f"User {destUsername} not found!")
 
     def whoami(client: socket.socket, args: str):
+        """Get the nickname of the current user."""
         send_message(client, f"Your nickname is {clients[client]}")
 
     def whois(client: socket.socket, args: str):
+        """Get informations about a specific user."""
         if len(args) < 1:
             send_message(client, "Syntax: /whois <username>")
             return
@@ -39,6 +43,7 @@ class Command:
             send_message(client, f"User {username} not found!")
 
     def kick(client: socket.socket, args: str):
+        """Kick a user from the chat."""
         if len(args) < 2:
             send_message(client, "Syntax: /kick <username> <reason>")
             return

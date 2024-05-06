@@ -53,6 +53,19 @@ def handle_client(client: socket.socket, addr):
             break
 
 
+"""
+a dictionary with the commands that can be executed.
+Each command is a tuple with a function and a boolean that indicates if the command is reserved to admin use.
+"""
+commands_list: dict[str, Tuple[Callable, bool]] = {
+    "kick": (Command.kick, True),
+    "list": (Command.list, False),
+    "msg": (Command.msg, False),
+    "whoami": (Command.whoami, False),
+    "whois": (Command.whois, True),
+}
+
+
 def process_command(client: socket.socket, command: str):
     command_parts = command[1:].strip().split(" ")
     command_name = command_parts[0]
@@ -66,19 +79,6 @@ def process_command(client: socket.socket, command: str):
         fun(client, args)
     else:
         send_message(client, "Invalid command!")
-
-
-"""
-a dictionary with the commands that can be executed.
-Each command is a tuple with a function and a boolean that indicates if the command is reserved to admin use.
-"""
-commands_list: dict[str, Tuple[Callable, bool]] = {
-    "kick": (Command.kick, True),
-    "list": (Command.list, False),
-    "msg": (Command.msg, False),
-    "whoami": (Command.whoami, False),
-    "whois": (Command.whois, True),
-}
 
 
 def server_start():
