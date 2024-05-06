@@ -8,6 +8,7 @@ from utils import send_command, receive_message, send_message, get_address
 # clients and nicknames
 clients: Dict[socket.socket, str] = {}
 
+# admin password (stored in plain text as proof of concept)
 admin_password = "password"
 
 
@@ -28,10 +29,10 @@ def new_client(client: socket.socket, addr):
         else:
             close_connection(client)
             return
-    clients[client] = nickname
     print(f"Nickname of {addr} set to {nickname}")
-    send_message(client, f"Welcome to the chatroom {nickname}!")
     server_broadcast(f"{nickname} has joined the chat!")
+    clients[client] = nickname
+    send_message(client, f"Welcome to the chatroom {nickname}!")
 
 
 def server_broadcast(message: str):
