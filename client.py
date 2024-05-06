@@ -15,17 +15,17 @@ if nickname == "admin":
     password: str = input("Enter password: ")
 
 
-def handle_command(command):
-    if command == Signal.KICK.value:
+def handle_signal(signal):
+    if signal == Signal.KICK.value:
         print("Kicked from chatroom.")
         global stop_thread
         stop_thread = True
-    elif command == Signal.NICK.value:
+    elif signal == Signal.NICK.value:
         send_message(client, nickname)
         if receive_message(client) != Signal.NICK_OK.value:
             print("Connection refused (nickname already in use)")
             stop_thread = True
-    elif command == Signal.PASSW.value:
+    elif signal == Signal.PASSW.value:
         send_message(client, password)
         if receive_message(client) != Signal.PASSW_OK.value:
             print("Connection refused (wrong password)")
@@ -37,13 +37,13 @@ def receive_messages():
     while not stop_thread:
         try:
             message = receive_message(client)
-            print(message) if not is_command(message) else handle_command(message)
+            print(message) if not is_signal(message) else handle_signal(message)
         except:
             client.close()
             return
 
 
-def is_command(text) -> bool:
+def is_signal(text) -> bool:
     return text in [command.value for command in Signal]
 
 

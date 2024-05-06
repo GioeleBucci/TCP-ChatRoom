@@ -41,6 +41,7 @@ def server_broadcast(message: str):
         send_message(client, message)
 
 
+# sends a message to all other clients
 def client_broadcast(client: socket.socket, message: str):
     formatted_msg = f"{clients[client]}: {message}"
     print(formatted_msg)
@@ -49,7 +50,7 @@ def client_broadcast(client: socket.socket, message: str):
             send_message(c, formatted_msg)
 
 
-# Function to handle each client connection
+# handle a client connection
 def handle_client(client: socket.socket, addr):
     new_client(client, addr)
     while True:
