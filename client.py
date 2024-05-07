@@ -52,6 +52,9 @@ def write_messages():
     while not stop_thread:
         try:
             message = input()
+            if message == "/exit":
+                print("Closing connection...")
+                client.close()
             send_message(client, message)
         except:
             client.close()
