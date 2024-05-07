@@ -11,26 +11,30 @@ admin_password = "password"
 
 
 def new_client(client: socket.socket, addr):
-    print(f"New connection from {addr}")
-    send_command(client, Signal.NICK)
-    nickname = receive_message(client)
-    if nickname not in clients.values():
-        send_command(client, Signal.NICK_OK)
-    else:
-        close_connection(client)
-        return
-    if nickname == "admin":
-        send_command(client, Signal.PASSW)
-        password = receive_message(client)
-        if password == admin_password:
-            send_command(client, Signal.PASSW_OK)
+    try:
+        print(f"New connection from {addr}")
+        send_command(client, Signal.NICK)
+        nickname = receive_message(client)
+        if nickname not in clients.values():
+            send_command(client, Signal.NICK_OK)
         else:
             close_connection(client)
             return
-    print(f"Nickname of {addr} set to {nickname}")
-    server_broadcast(f"{nickname} has joined the chat!")
-    clients[client] = nickname
-    send_message(client, f"Welcome to the chatroom {nickname}!")
+        if nickname == "admin":
+            send_command(client, Signal.PASSW)
+            password = receive_message(client)
+            if password == admin_password:
+                send_command(client, Signal.PASSW_OK)
+            else:
+                close_connection(client)
+                return
+        print(f"Nickname of {addr} set to {nickname}")
+        server_broadcast(f"{nickname} has joined the chat!")
+        clients[client] = nickname
+        send_message(client, f"Welcome to the chatroom {nickname}!")
+    except:
+        print(f"Lost connection from {addr} during login")
+        close_connection(client)
 
 
 # handle a client connection
