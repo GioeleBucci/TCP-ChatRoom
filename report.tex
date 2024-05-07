@@ -1,0 +1,108 @@
+\documentclass[a4paper,12pt]{report}
+
+\usepackage{alltt, fancyvrb, url}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[table]{xcolor}
+
+% Questo commentalo se vuoi scrivere in inglese.
+\usepackage[italian]{babel}
+\usepackage[italian]{cleveref}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{listings}
+
+% Set the top margin to 0.5 inch
+\setlength{\topmargin}{-0.3in}
+
+\setlength{\parindent}{0pt}
+
+\title{\textbf{Progetto per il corso di\\"Programmazione di reti"}
+\\\textit{Sistema di Chat Client-Server}
+\\A.A. 2023/24}
+
+\author{Gioele Bucci
+\\ \texttt{gioele.bucci@studio.unibo.it}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduzione}
+
+L'applicazione realizzata è una semplice chatroom basata su architettura client-server multithreaded, implementata in Python. La comunicazione tra client e server avviene tramite connessione TCP, impiegando la libreria \verb|socket|. \par
+
+\subsection{Funzionalità}
+
+\begin{itemize}
+    \item \textbf{Messaggistica}: I client possono inviare messaggi nella chat: tali messaggi vengono ricevuti dal server e ritrasmessi a tutti gli altri client.
+
+    \item \textbf{Comandi}: I client possono inviare comandi al server, che li elabora ed esegue le azioni corrispondenti. I comandi si distinguono in comandi utente e comandi riservati, utilizzabili solo dall'amministratore.
+
+    \item \textbf{Gestione di errori e disconnessione}: Quando un client si disconnette, volontariamente o a causa di un errore, il server lo rimuove dalla lista dei client e trasmette un messaggio a tutti gli altri client notificando la disconnessione.
+
+\end{itemize}
+
+\section{Funzionamento}
+
+Il server mantiene una porta in ascolto per le connessioni in ingresso. All'arrivo di un tentativo di connessione viene creato un thread per la gestione del relativo client.  \par
+
+All'avvio, il client richiede all'utente di inserire un nickname. Se il nickname inserito è "admin", viene richiesta anche una password. Entrambe le informazioni vengono memorizzate localmente in attesa di essere verificate dal server. 
+Successivamente il client istanzia un socket per stabilire la connessione con il server e crea due thread: uno per la ricezione dei messaggi e uno per l'invio.
+
+\subsection{Verifica della connessione del client}
+
+\begin{enumerate}
+    \item Il client richiede all'utente un nickname (ed eventualmente una password, se il nickname era "admin") ed effettua la connessione al server.
+    \item Il server invia un segnale di \verb|NICK|, al quale il client risponde con il nickname. Se tale nickname è già in uso il server termina la connessione, altrimenti risponde con \verb|NICK_OK|
+    \item Se il nickname è "admin", il server invia un segnale aggiuntivo di \verb|PASSW|, al quale il client risponde con la password. Il server confronta la password ricevuta con quella memorizzata e se corrispondono invia un segnale di \verb|PASSW_OK| e autentica il client come amministratore: in caso contrario la connessione viene terminata. \par
+    \textit{Nota:} la password è memorizzata in chiaro nello script del server ma in un'applicazione reale sarebbe necessario utilizzare un metodo di più sicuro di memorizzazione, come ad esempio l'hashing delle password in un database.
+\end{enumerate}
+
+\section{Comandi}
+
+Di seguito una lista dei comandi disponibili, con la relativa sintassi. Per ciascun comando si specifica anche se è riservato, ovvero utilizzabile solo dall'admin. Ciascun comando è inviato da un client e viene elaborato dal server, con l'eccezione del comando \verb|exit| che viene eseguito direttamente sul lato client.
+
+\begin{table}[htbp]
+    \begin{tabular}{ccc}
+        \rowcolor{lime!50} 
+        \textbf{Comando}& \textbf{Descrizione}& \textbf{Riservato} \\ \hline
+        \verb |kick <user> <reason>| & espelle un utente dalla stanza & SI \\ \hline
+        \verb |list| & elenca tutti gli utenti connessi & NO \\ \hline
+        \verb |msg <user> <message>| & invia un messaggio privato ad un utente & NO \\ \hline
+        \verb |whoami| & restituisce il proprio nickname & NO \\ \hline
+        \verb |whois <user>| & restituisce informazioni relative al client & SI \\ \hline
+        \verb |exit| & \textit{(client-side)} termina la connessione & NO \\ \hline
+    \end{tabular}
+\end{table}
+
+\section{Utilizzo}
+Per utilizzare l'applicazione, aprire prima il terminale e avviare prima il server e in seguito il client. Assicurarsi di specificare l'indirizzo IP e la porta come argomenti durante l'avvio.
+
+\begin{lstlisting}
+python .\server.py <ip> <port>
+python .\client.py <ip> <port>
+\end{lstlisting}
+
+È anche possibile non fornire alcun argomento agli script, in tal caso verrà utilizzato il valore di default \verb|127.0.0.1:55555|.
+
+\section{Modularizzazione dell'applicazione}
+
+L'applicazione è stata modularizzata per favorire una maggiore estensibilità e manutenibilità. Di seguito si elencano i moduli aggiunti, ciascuno corredato da una breve descrizione.
+
+\begin{itemize}
+    
+    \item \verb|utils.py|: Contiene funzioni comuni utilizzate sia dal client che dal server. Contiene le funzioni per inviare e ricevere messaggi ad un socket e per estrarre l'indirizzo di connessione dagli argomenti passati a riga di comando.
+
+    \item \verb|commands.py|: Definisce i comandi eseguibili dal server, al quale è lasciato il compito di definire quali di questi comandi sono disponibili e specificarne il livello di accesso.
+    
+    \item \verb|signals.py|: Definisce i segnali che il server può trasmettere ai client.
+
+    \item \verb|serverutils.py|: Modulo riservato al server contenente funzioni per l'invio di comandi e messaggi broadcast. Mantiene anche la lista dei client connessi e i relativi nickname.
+    
+\end{itemize}
+
+\end{document}
